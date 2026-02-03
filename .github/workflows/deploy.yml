@@ -16,7 +16,7 @@ jobs:
       - name: Deploy to PythonAnywhere
         uses: umuttopalak/pythonanywhere-deploy-action@v1.1.0
         with:
-          host: 'www.pythonanywhere.com'
+          host: 'www.eu.pythonanywhere.com'
           username: ${{ secrets.PYTHONANYWHERE_USERNAME }}
           api_token: ${{ secrets.PYTHONANYWHERE_API_TOKEN }}
           domain_name: ${{ secrets.PYTHONANYWHERE_DOMAIN }}
