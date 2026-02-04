@@ -10,13 +10,24 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Deploy to PythonAnywhere
-        uses: umuttopalak/pythonanywhere-deploy-action@v1.1.0
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 'www.eu.pythonanywhere.com'
-          username: ${{ secrets.PYTHONANYWHERE_USERNAME }}
-          api_token: ${{ secrets.PYTHONANYWHERE_API_TOKEN }}
-          domain_name: ${{ secrets.PYTHONANYWHERE_DOMAIN }}
+          host: ${{ secrets.PA_SSH_HOST }}
+          username: ${{ secrets.PA_USERNAME }}
+          key: ${{ secrets.PA_SSH_PRIVATE_KEY }}
+          script: |
+            # Navigate to your project directory
+            cd ${{ secrets.PA_WORKING_DIRECTORY }}
+            
+            # Pull latest code from GitHub
+            git pull origin main
+            
+            # Activate virtual environment and install/update dependencies
+            source ${{ secrets.PA_VENV_DIRECTORY }}/bin/activate
+            pip install -r requirements.txt
+            
+            # Reload the web app by touching the WSGI file
+            touch ${{ secrets.PA_WSGI_FILE }}
+            
+            echo "Deployment completed successfully!"
