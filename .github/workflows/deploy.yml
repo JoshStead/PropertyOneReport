@@ -11,6 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PA_SSH_HOST }}
+          username: ${{ secrets.PA_USERNAME }}
+          key: ${{ secrets.PA_SSH_PRIVATE_KEY }}
+          script: |
+            echo "SSH connection successful!"
+            echo "Connected as: $(whoami)"
+            echo "Current directory: $(pwd)"
+      
       - name: Deploy to PythonAnywhere
         uses: appleboy/ssh-action@v1.0.3
         with:
