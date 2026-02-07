@@ -1,8 +1,52 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
+from reportlab.lib.colors import HexColor, black, white
 from io import BytesIO
 from datetime import datetime
+
+
+# Professional Color Scheme
+COLORS = {
+    'primary': HexColor('#2C5F8D'),      # Deep blue - main headings
+    'secondary': HexColor('#4A90A4'),    # Lighter blue - subheadings
+    'accent': HexColor('#E8704C'),       # Coral - highlights/warnings
+    'success': HexColor('#4A9D5F'),      # Green - positive indicators
+    'warning': HexColor('#F39C12'),      # Orange - caution
+    'danger': HexColor('#E74C3C'),       # Red - alerts
+    'dark_gray': HexColor('#34495E'),    # Dark gray - body text
+    'light_gray': HexColor('#95A5A6'),   # Light gray - secondary text
+    'bg_light': HexColor('#ECF0F1'),     # Very light gray - backgrounds
+}
+
+
+def draw_section_header(pdf, x, y, text, width_inches=7):
+    """
+    Draw a colored section header with background
+    Returns the new y position after the header
+    """
+    pdf.setFillColor(COLORS['secondary'])
+    pdf.rect(x - 0.1*inch, y - 0.05*inch, width_inches*inch, 0.3*inch, fill=True, stroke=False)
+    
+    pdf.setFillColor(white)
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(x, y, text)
+    pdf.setFillColor(COLORS['dark_gray'])
+    
+    return y - 0.35*inch
+
+
+def draw_subsection_header(pdf, x, y, text):
+    """
+    Draw a colored subsection header (no background, just colored text)
+    Returns the new y position after the header
+    """
+    pdf.setFillColor(COLORS['primary'])
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(x, y, text)
+    pdf.setFillColor(COLORS['dark_gray'])
+    
+    return y - 0.25*inch
 
 
 def create_pdf(first_name, last_name, postcode, address, data):
@@ -17,18 +61,27 @@ def create_pdf(first_name, last_name, postcode, address, data):
     pdf = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Title
-    pdf.setFont("Helvetica-Bold", 24)
-    pdf.drawString(1*inch, height - 1*inch, "UK Postcode Report")
+    # ===== HEADER WITH COLORED BACKGROUND =====
+    # Draw colored header bar
+    pdf.setFillColor(COLORS['primary'])
+    pdf.rect(0, height - 1.5*inch, width, 1.5*inch, fill=True, stroke=False)
+    
+    # Title in white
+    pdf.setFillColor(white)
+    pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(1*inch, height - 0.8*inch, "UK Property Report")
+    
+    # Reset to dark gray for body text
+    pdf.setFillColor(COLORS['dark_gray'])
     
     # Generated for text
     pdf.setFont("Helvetica", 12)
     full_name = f"{first_name} {last_name}"
-    pdf.drawString(1*inch, height - 1.3*inch, f"This report was generated for {full_name}")
+    pdf.drawString(1*inch, height - 1.6*inch, f"This report was generated for {full_name}")
     
     # Address in UK format
     pdf.setFont("Helvetica", 11)
-    y_pos = height - 1.6*inch
+    y_pos = height - 1.9*inch
     
     # Split address by commas and display line by line
     address_parts = [part.strip() for part in address.split(',')]
@@ -39,10 +92,16 @@ def create_pdf(first_name, last_name, postcode, address, data):
     # Starting position for content
     y_position = y_pos - 0.3*inch
     
-    # Location Information Section
+    # ===== LOCATION INFORMATION SECTION =====
+    # Section heading with colored background
+    pdf.setFillColor(COLORS['secondary'])
+    pdf.rect(0.9*inch, y_position - 0.05*inch, width - 1.8*inch, 0.3*inch, fill=True, stroke=False)
+    
+    pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 16)
     pdf.drawString(1*inch, y_position, "Location Information")
-    y_position -= 0.3*inch
+    pdf.setFillColor(COLORS['dark_gray'])
+    y_position -= 0.35*inch
     
     pdf.setFont("Helvetica", 12)
     location = data.get('location', {})
@@ -97,10 +156,8 @@ def create_pdf(first_name, last_name, postcode, address, data):
     
     y_position -= 0.3*inch
     
-    # Crime Statistics Section
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(1*inch, y_position, "Crime Statistics")
-    y_position -= 0.3*inch
+    # ===== CRIME STATISTICS SECTION =====
+    y_position = draw_section_header(pdf, 1*inch, y_position, "Crime Statistics")
     
     # Add explanatory text about coverage area
     pdf.setFont("Helvetica-Oblique", 10)
@@ -214,10 +271,8 @@ def create_pdf(first_name, last_name, postcode, address, data):
         pdf.showPage()
         y_position = height - 1*inch
     
-    # Property Information Section (EPC Data)
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(1*inch, y_position, "Property Information")
-    y_position -= 0.3*inch
+    # ===== PROPERTY INFORMATION SECTION =====
+    y_position = draw_section_header(pdf, 1*inch, y_position, "Property Information")
     
     pdf.setFont("Helvetica", 12)
     epc = data.get('epc', {})
@@ -288,10 +343,8 @@ def create_pdf(first_name, last_name, postcode, address, data):
         pdf.showPage()
         y_position = height - 1*inch
     
-    # Train Station Section
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(1*inch, y_position, "Nearest Train Stations")
-    y_position -= 0.3*inch
+    # ===== TRAIN STATION SECTION =====
+    y_position = draw_section_header(pdf, 1*inch, y_position, "Nearest Train Stations")
     
     pdf.setFont("Helvetica", 12)
     station_data = data.get('train_station', {})
@@ -474,16 +527,14 @@ def create_pdf(first_name, last_name, postcode, address, data):
         pdf.showPage()
         y_position = height - 1*inch
     
-    # Schools Section
+    # ===== SCHOOLS SECTION =====
     schools_data = data.get('schools', {})
     
     if schools_data.get('status') == 'success':
         schools = schools_data.get('schools', [])
         
         if schools:
-            pdf.setFont("Helvetica-Bold", 16)
-            pdf.drawString(1*inch, y_position, "Nearest Schools")
-            y_position -= 0.25*inch
+            y_position = draw_section_header(pdf, 1*inch, y_position, "Education")
             
             pdf.setFont("Helvetica-Oblique", 10)
             pdf.drawString(1*inch, y_position, "(Within 10 miles - Data from OpenStreetMap)")
@@ -551,13 +602,19 @@ def create_pdf(first_name, last_name, postcode, address, data):
                 pdf.showPage()
                 y_position = height - 1*inch
             
-            pdf.setFont("Helvetica-Bold", 16)
-            pdf.drawString(1*inch, y_position, "Nearest GP Surgeries")
-            y_position -= 0.25*inch
+            y_position = draw_section_header(pdf, 1*inch, y_position, "Healthcare")
             
-            pdf.setFont("Helvetica-Oblique", 10)
-            pdf.drawString(1*inch, y_position, "(Within 5 miles - Data from OpenStreetMap)")
-            y_position -= 0.3*inch
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.setFillColor(COLORS['primary'])
+            pdf.drawString(1.2*inch, y_position, "GP Surgeries")
+            pdf.setFillColor(COLORS['dark_gray'])
+            y_position -= 0.2*inch
+            
+            pdf.setFont("Helvetica-Oblique", 9)
+            pdf.setFillColor(COLORS['light_gray'])
+            pdf.drawString(1.2*inch, y_position, "(Within 5 miles - Data from OpenStreetMap)")
+            pdf.setFillColor(COLORS['dark_gray'])
+            y_position -= 0.25*inch
             
             pdf.setFont("Helvetica", 12)
             
@@ -662,20 +719,28 @@ def create_pdf(first_name, last_name, postcode, address, data):
         restaurants = lifestyle_data.get('restaurants', [])
         gyms = lifestyle_data.get('gyms', [])
         
-        # Supermarkets
-        if supermarkets:
+        # Check if we have any lifestyle data to show
+        if supermarkets or cafes or restaurants or gyms:
             # Check if we need a new page
             if y_position < 3*inch:
                 pdf.showPage()
                 y_position = height - 1*inch
             
-            pdf.setFont("Helvetica-Bold", 16)
-            pdf.drawString(1*inch, y_position, "Nearest Supermarkets")
-            y_position -= 0.25*inch
+            y_position = draw_section_header(pdf, 1*inch, y_position, "Lifestyle & Amenities")
+        
+        # Supermarkets
+        if supermarkets:
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.setFillColor(COLORS['primary'])
+            pdf.drawString(1.2*inch, y_position, "Supermarkets")
+            pdf.setFillColor(COLORS['dark_gray'])
+            y_position -= 0.2*inch
             
-            pdf.setFont("Helvetica-Oblique", 10)
-            pdf.drawString(1*inch, y_position, "(Within 15 miles - Data from OpenStreetMap)")
-            y_position -= 0.3*inch
+            pdf.setFont("Helvetica-Oblique", 9)
+            pdf.setFillColor(COLORS['light_gray'])
+            pdf.drawString(1.2*inch, y_position, "(Within 15 miles - Data from OpenStreetMap)")
+            pdf.setFillColor(COLORS['dark_gray'])
+            y_position -= 0.25*inch
             
             pdf.setFont("Helvetica", 12)
             
@@ -853,13 +918,13 @@ def create_pdf(first_name, last_name, postcode, address, data):
         pdf.showPage()
         y_position = height - 1*inch
     
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(1*inch, y_position, "Heritage & Planning Restrictions")
-    y_position -= 0.3*inch
+    y_position = draw_section_header(pdf, 1*inch, y_position, "Heritage & Planning Restrictions")
     
-    pdf.setFont("Helvetica-Oblique", 10)
+    pdf.setFont("Helvetica-Oblique", 9)
+    pdf.setFillColor(COLORS['light_gray'])
     pdf.drawString(1*inch, y_position, "(Data from Historic England)")
-    y_position -= 0.3*inch
+    pdf.setFillColor(COLORS['dark_gray'])
+    y_position -= 0.25*inch
     
     # Listed Building Status
     listed_building = data.get('listed_building', {})
@@ -1001,9 +1066,7 @@ def create_pdf(first_name, last_name, postcode, address, data):
         pdf.showPage()
         y_position = 10*inch
     
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(1*inch, y_position, "Property Sale History")
-    y_position -= 0.35*inch
+    y_position = draw_section_header(pdf, 1*inch, y_position, "Property Sale History")
     
     if price_paid.get('status') == 'success':
         if price_paid.get('property_found') and price_paid.get('transactions'):
