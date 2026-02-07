@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UK Postcode Investigator 🔍</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #F5F5F3;
+        }
+        .container {
+            background-color: #FFFFFF;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2D2D2D;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
+            color: #2D2D2D;
+            margin-bottom: 8px;
+        }
+        .postcode-container {
+            display: block;
+        }
+        .postcode-container input {
+            width: 100%;
+        }
+        .search-btn {
+            margin-top: 10px;
+            padding: 12px 20px;
+            background-color: #2D2D2D;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            height: 44px;
+            width: 100%;
+        }
+        .search-btn:hover {
+            background-color: #1a1a1a;
+        }
+        .search-btn:disabled {
+            background-color: #CCC;
+            cursor: not-allowed;
+        }
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #E5E5E5;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            height: 44px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #CC785C;
+        }
+        input.error {
+            border-color: #DC3545;
+        }
+        input.valid {
+            border-color: #28A745;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E5E5E5;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            background-color: white;
+        }
+        select:focus {
+            outline: none;
+            border-color: #CC785C;
+        }
+        .address-container {
+            display: none;
+        }
+        .address-container.show {
+            display: block;
+        }
+        .loading {
+            color: #CC785C;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+        .error-message {
+            color: #DC3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        button {
+            margin-top: 25px;
+            padding: 12px 24px;
+            background-color: #CC785C;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #B86A4D;
+        }
+        button:disabled {
+            background-color: #CCC;
+            cursor: not-allowed;
+        }
+        .info {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #F5F5F3;
+            border-left: 4px solid #CC785C;
+            font-size: 14px;
+            color: #666;
+            border-radius: 4px;
+        }
+        .example {
+            font-family: monospace;
+            color: #CC785C;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 UK Postcode Investigator</h1>
+        <p>Enter a valid UK postcode to generate a detailed PDF report.</p>
+        
+        <form method="POST" action="/generate-pdf" id="postcodeForm">
+            <label for="firstName">First Name:</label>
+            <input 
+                type="text" 
+                id="firstName" 
+                name="firstName" 
+                placeholder="e.g., John" 
+                required
+                autocomplete="given-name"
+            >
+            
+            <label for="lastName">Last Name:</label>
+            <input 
+                type="text" 
+                id="lastName" 
+                name="lastName" 
+                placeholder="e.g., Smith" 
+                required
+                autocomplete="family-name"
+            >
+            
+            <label for="postcode">UK Postcode:</label>
+            <div class="postcode-container">
+                <input 
+                    type="text" 
+                    id="postcode" 
+                    name="postcode" 
+                    placeholder="e.g., SW1A 1AA" 
+                    required
+                    autocomplete="off"
+                >
+                <button type="button" class="search-btn" id="searchBtn">🔍 Search</button>
+            </div>
+            <div class="error-message" id="errorMessage">
+                Please enter a valid UK postcode
+            </div>
+            <div class="loading" id="loadingMessage">
+                Searching for addresses...
+            </div>
+            
+            <div class="address-container" id="addressContainer">
+                <label for="address">Select Address:</label>
+                <select id="address" name="address" required>
+                    <option value="">-- Select an address --</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submitBtn">📄 Generate PDF Report</button>
+        </form>
+        
+        <div class="info">
+            <strong>UK Postcode Format:</strong><br>
+            Valid examples: <span class="example">SW1A 1AA</span>, <span class="example">EC1A 1BB</span>, <span class="example">W1A 0AX</span>
+        </div>
+    </div>
+
+    <script>
+        const postcodeInput = document.getElementById('postcode');
+        const errorMessage = document.getElementById('errorMessage');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const searchBtn = document.getElementById('searchBtn');
+        const addressContainer = document.getElementById('addressContainer');
+        const addressSelect = document.getElementById('address');
+        const form = document.getElementById('postcodeForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // UK Postcode validation regex
+        const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i;
+
+        function validatePostcode(postcode) {
+            const cleaned = postcode.trim().toUpperCase();
+            return postcodeRegex.test(cleaned);
+        }
+
+        postcodeInput.addEventListener('input', function() {
+            const value = this.value;
+            
+            if (value.length === 0) {
+                this.classList.remove('error', 'valid');
+                errorMessage.classList.remove('show');
+                searchBtn.disabled = false;
+            } else if (validatePostcode(value)) {
+                this.classList.remove('error');
+                this.classList.add('valid');
+                errorMessage.classList.remove('show');
+                searchBtn.disabled = false;
+            } else {
+                this.classList.remove('valid');
+                this.classList.add('error');
+                errorMessage.classList.add('show');
+                searchBtn.disabled = true;
+            }
+            
+            // Hide address dropdown when postcode changes
+            addressContainer.classList.remove('show');
+            addressSelect.innerHTML = '<option value="">-- Select an address --</option>';
+        });
+
+        // Auto-format postcode with space
+        postcodeInput.addEventListener('blur', function() {
+            let value = this.value.trim().toUpperCase();
+            if (value.length >= 5 && value.indexOf(' ') === -1) {
+                value = value.slice(0, -3) + ' ' + value.slice(-3);
+                this.value = value;
+            }
+        });
+
+        // Search button click handler
+        searchBtn.addEventListener('click', async function() {
+            const postcode = postcodeInput.value.trim();
+            
+            if (!validatePostcode(postcode)) {
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            // Show loading, disable button
+            loadingMessage.classList.add('show');
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            addressContainer.classList.remove('show');
+
+            try {
+                const response = await fetch('/search-addresses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ postcode: postcode })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.addresses && data.addresses.length > 0) {
+                    // Populate dropdown with addresses
+                    addressSelect.innerHTML = '<option value="">-- Select an address --</option>';
+                    data.addresses.forEach(addr => {
+                        const option = document.createElement('option');
+                        option.value = addr;
+                        option.textContent = addr;
+                        addressSelect.appendChild(option);
+                    });
+                    
+                    // Show address dropdown
+                    addressContainer.classList.add('show');
+                } else {
+                    alert(data.error || 'No addresses found for this postcode');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to search addresses. Please try again.');
+            } finally {
+                loadingMessage.classList.remove('show');
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔍 Search';
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            const postcode = postcodeInput.value;
+            const address = addressSelect.value;
+            
+            if (!validatePostcode(postcode)) {
+                e.preventDefault();
+                postcodeInput.classList.add('error');
+                errorMessage.classList.add('show');
+                return;
+            }
+            
+            if (!address) {
+                e.preventDefault();
+                alert('Please search for and select an address');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
